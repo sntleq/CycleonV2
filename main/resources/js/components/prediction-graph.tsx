@@ -10,16 +10,19 @@ import {
     ChartLegend,
 } from "@/components/ui/chart"
 
-export const description = "A multiple line chart with predictions"
-
 interface ChartDataPoint {
     date: string
     [key: string]: string | number
 }
 
+interface ChartItem {
+    value: string
+    label: string
+}
+
 interface PredictionGraphProps {
     data: ChartDataPoint[]
-    items: string[]
+    items: ChartItem[]
 }
 
 export function PredictionGraph({ data, items }: PredictionGraphProps) {
@@ -32,10 +35,10 @@ export function PredictionGraph({ data, items }: PredictionGraphProps) {
         return dataDate > today
     })
 
-    // Generate chart config dynamically based on items
+    // 🔹 Chart config now maps VALUE → LABEL
     const chartConfig: ChartConfig = items.reduce((config, item, index) => {
-        config[item] = {
-            label: item,
+        config[item.value] = {
+            label: item.label,
             color: `var(--chart-${(index % 5) + 1})`,
         }
         return config
@@ -46,10 +49,7 @@ export function PredictionGraph({ data, items }: PredictionGraphProps) {
             <LineChart
                 accessibilityLayer
                 data={data}
-                margin={{
-                    left: 12,
-                    right: 12,
-                }}
+                margin={{ left: 12, right: 12 }}
             >
                 <defs>
                     <pattern
@@ -70,7 +70,6 @@ export function PredictionGraph({ data, items }: PredictionGraphProps) {
 
                 <CartesianGrid vertical={false} />
 
-                {/* Shaded area for predictions */}
                 {firstPredictionIndex > 0 && (
                     <ReferenceArea
                         x1={data[firstPredictionIndex - 1].date}
@@ -85,32 +84,42 @@ export function PredictionGraph({ data, items }: PredictionGraphProps) {
                     axisLine={false}
                     tickMargin={8}
                     minTickGap={32}
-                    tickFormatter={(value) => {
-                        const date = new Date(value)
-                        return date.toLocaleDateString("en-PH", {
+                    tickFormatter={(value) =>
+                        new Date(value).toLocaleDateString("en-PH", {
                             month: "short",
                             day: "numeric",
                         })
-                    }}
+                    }
                 />
+
                 <ChartTooltip
-                    content={<ChartTooltipContent
-                        labelFormatter={(value, payload) => {
-                            const date = new Date(value)
-                            date.setHours(0, 0, 0, 0)
-                            const isPrediction = date > today
-                            const formattedDate = date.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })
-                            return isPrediction ? `${formattedDate} (Prediction)` : formattedDate
-                        }}
-                    />}
+                    content={
+                        <ChartTooltipContent
+                            labelFormatter={(value) => {
+                                const date = new Date(value)
+                                date.setHours(0, 0, 0, 0)
+
+                                const formatted = date.toLocaleDateString("en-PH", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                })
+
+                                return date > today
+                                    ? `${formatted} (Prediction)`
+                                    : formatted
+                            }}
+                        />
+                    }
                 />
+
                 <ChartLegend content={<ChartLegendContent />} />
 
-                {/* Dynamically render lines based on items */}
+                {/* 🔹 Lines now use value as dataKey */}
                 {items.map((item, index) => (
                     <Line
-                        key={item}
-                        dataKey={item}
+                        key={item.value}
+                        dataKey={item.value}
                         type="monotone"
                         stroke={`var(--chart-${(index % 5) + 1})`}
                         strokeWidth={2}

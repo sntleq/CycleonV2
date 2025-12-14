@@ -50,35 +50,82 @@ export default function Runescape() {
     const [priceRisePeriod, setPriceRisePeriod] = useState("day1");
     const [priceFallPeriod, setPriceFallPeriod] = useState("day1");
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>();
 
-    const items: string[] = ["Item 1", "Item 2", "Item 3", "Item 4"];
-    const itemValues = [
+    const categories = [
+        { value: "0", label: "Miscellaneous" },
+        { value: "1", label: "Ammo" },
+        { value: "2", label: "Arrows" },
+        { value: "3", label: "Bolts" },
+        { value: "4", label: "Construction materials" },
+        { value: "5", label: "Construction products" },
+        { value: "6", label: "Cooking ingredients" },
+        { value: "7", label: "Costumes" },
+        { value: "8", label: "Crafting materials" },
+        { value: "9", label: "Familiars" },
+        { value: "10", label: "Farming produce" },
+        { value: "11", label: "Fletching materials" },
+        { value: "12", label: "Food and Drink" },
+        { value: "13", label: "Herblore materials" },
+        { value: "14", label: "Hunting equipment" },
+        { value: "15", label: "Hunting Produce" },
+        { value: "16", label: "Jewellery" },
+        { value: "17", label: "Mage armour" },
+        { value: "18", label: "Mage weapons" },
+        { value: "19", label: "Melee armour - low level" },
+        { value: "20", label: "Melee armour - mid level" },
+        { value: "21", label: "Melee armour - high level" },
+        { value: "22", label: "Melee weapons - low level" },
+        { value: "23", label: "Melee weapons - mid level" },
+        { value: "24", label: "Melee weapons - high level" },
+        { value: "25", label: "Mining and Smithing" },
+        { value: "26", label: "Potions" },
+        { value: "27", label: "Prayer armour" },
+        { value: "28", label: "Prayer materials" },
+        { value: "29", label: "Range armour" },
+        { value: "30", label: "Range weapons" },
+        { value: "31", label: "Runecrafting" },
+        { value: "32", label: "Runes, Spells and Teleports" },
+        { value: "33", label: "Seeds" },
+        { value: "34", label: "Summoning scrolls" },
+        { value: "35", label: "Tools and containers" },
+        { value: "36", label: "Woodcutting product" },
+        { value: "37", label: "Pocket items" },
+        { value: "38", label: "Stone spirits" },
+        { value: "39", label: "Salvage" },
+        { value: "40", label: "Firemaking products" },
+        { value: "41", label: "Archaeology materials" },
+        { value: "42", label: "Wood spirits" },
+        { value: "43", label: "Necromancy armour" }
+    ]
+    const items = [
         { value: '10006', label: 'Red Partyhat' },
         { value: '10007', label: 'Blue Partyhat' },
         { value: '10008', label: 'Green Partyhat' },
+        { value: '10009', label: 'Purple Partyhat' },
     ]
     const data = [
-        { date: "2025-12-01", "Item 1": 385, "Item 2": 320, "Item 3": 324, "Item 4": 213 },
-        { date: "2025-12-02", "Item 1": 438, "Item 2": 480, "Item 3": 280, "Item 4": 190 },
-        { date: "2025-12-03", "Item 1": 155, "Item 2": 200, "Item 3": 310, "Item 4": 245 },
-        { date: "2025-12-04", "Item 1": 92, "Item 2": 150, "Item 3": 265, "Item 4": 180 },
-        { date: "2025-12-05", "Item 1": 492, "Item 2": 420, "Item 3": 390, "Item 4": 350 },
-        { date: "2025-12-06", "Item 1": 81, "Item 2": 130, "Item 3": 175, "Item 4": 160 },
-        { date: "2025-12-07", "Item 1": 426, "Item 2": 380, "Item 3": 410, "Item 4": 320 },
-        { date: "2025-12-08", "Item 1": 307, "Item 2": 350, "Item 3": 295, "Item 4": 280 },
-        { date: "2025-12-09", "Item 1": 371, "Item 2": 310, "Item 3": 340, "Item 4": 290 },
-        { date: "2025-12-10", "Item 1": 475, "Item 2": 520, "Item 3": 450, "Item 4": 480 },
-        { date: "2025-12-11", "Item 1": 107, "Item 2": 170, "Item 3": 190, "Item 4": 150 },
-        { date: "2025-12-12", "Item 1": 341, "Item 2": 290, "Item 3": 315, "Item 4": 270 },
-        { date: "2025-12-13", "Item 1": 408, "Item 2": 450, "Item 3": 425, "Item 4": 390 }, // Today
+        { date: "2025-12-01", "10006": 385, "10007": 320, "10008": 324, "10009": 213 },
+        { date: "2025-12-02", "10006": 438, "10007": 480, "10008": 280, "10009": 190 },
+        { date: "2025-12-03", "10006": 155, "10007": 200, "10008": 310, "10009": 245 },
+        { date: "2025-12-04", "10006": 92, "10007": 150, "10008": 265, "10009": 180 },
+        { date: "2025-12-05", "10006": 492, "10007": 420, "10008": 390, "10009": 350 },
+        { date: "2025-12-06", "10006": 81, "10007": 130, "10008": 175, "10009": 160 },
+        { date: "2025-12-07", "10006": 426, "10007": 380, "10008": 410, "10009": 320 },
+        { date: "2025-12-08", "10006": 307, "10007": 350, "10008": 295, "10009": 280 },
+        { date: "2025-12-09", "10006": 371, "10007": 310, "10008": 340, "10009": 290 },
+        { date: "2025-12-10", "10006": 475, "10007": 520, "10008": 450, "10009": 480 },
+        { date: "2025-12-11", "10006": 107, "10007": 170, "10008": 190, "10009": 150 },
+        { date: "2025-12-12", "10006": 341, "10007": 290, "10008": 315, "10009": 270 },
+        { date: "2025-12-13", "10006": 408, "10007": 450, "10008": 425, "10009": 390 }, // Today
         // Predictions start here
-        { date: "2025-12-14", "Item 1": 420, "Item 2": 460, "Item 3": 435, "Item 4": 400 },
-        { date: "2025-12-15", "Item 1": 445, "Item 2": 480, "Item 3": 455, "Item 4": 420 },
-        { date: "2025-12-16", "Item 1": 390, "Item 2": 440, "Item 3": 415, "Item 4": 380 },
-        { date: "2025-12-17", "Item 1": 410, "Item 2": 470, "Item 3": 440, "Item 4": 405 },
-        { date: "2025-12-18", "Item 1": 435, "Item 2": 490, "Item 3": 465, "Item 4": 430 },
-        { date: "2025-12-19", "Item 1": 380, "Item 2": 430, "Item 3": 405, "Item 4": 370 },
-        { date: "2025-12-20", "Item 1": 460, "Item 2": 510, "Item 3": 485, "Item 4": 450 },
+        { date: "2025-12-14", "10006": 420, "10007": 460, "10008": 435, "10009": 400 },
+        { date: "2025-12-15", "10006": 445, "10007": 480, "10008": 455, "10009": 420 },
+        { date: "2025-12-16", "10006": 390, "10007": 440, "10008": 415, "10009": 380 },
+        { date: "2025-12-17", "10006": 410, "10007": 470, "10008": 440, "10009": 405 },
+        { date: "2025-12-18", "10006": 435, "10007": 490, "10008": 465, "10009": 430 },
+        { date: "2025-12-19", "10006": 380, "10007": 430, "10008": 405, "10009": 370 },
+        { date: "2025-12-20", "10006": 460, "10007": 510, "10008": 485, "10009": 450 },
     ]
 
     return (
@@ -135,13 +182,29 @@ export default function Runescape() {
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
                         <Card className="h-148">
                             <CardContent className="flex flex-col gap-6">
+                                <Select
+                                    value={selectedCategory}
+                                    onValueChange={setSelectedCategory}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map(category => (
+                                            <SelectItem key={category.value} value={category.value}>
+                                                {category.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Combobox
                                     value={selectedItems}
                                     onValueChange={setSelectedItems}
-                                    options={itemValues}
+                                    options={items}
+                                    disabled={!selectedCategory}
                                 />
 
-                                <ScrollArea className="h-121 border rounded-md">
+                                <ScrollArea className="h-105 border rounded-md">
                                     {items.length > 0 ? (
                                         <div className="flex flex-col">
                                             <ItemGroup>
@@ -179,14 +242,14 @@ export default function Runescape() {
                             </CardContent>
                         </Card>
                         <Card className="md:col-span-2 flex flex-col justify-center">
-                            {items.length > 0 ? (
+                            {selectedItems.length > 0 ? (
                                 <>
                                     <CardHeader>
                                         <CardTitle>Item Price History and Prediction</CardTitle>
                                         <CardDescription>Jan 30 - Apr 30, 2025</CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <PredictionGraph data={data} items={items} />
+                                        <PredictionGraph data={data} items={items.filter(i => selectedItems.includes(i.value))} />
                                     </CardContent>
                                 </>
                             ) : (
@@ -259,7 +322,7 @@ export default function Runescape() {
                                 <CardDescription>Jan 30 - Apr 30, 2025</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <PredictionGraph data={data} items={items} />
+                                <PredictionGraph data={data} items={items.filter(i => selectedItems.includes(i.value))} />
                             </CardContent>
                         </Card>
                     </div>
@@ -324,7 +387,7 @@ export default function Runescape() {
                                 <CardDescription>Jan 30 - Apr 30, 2025</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <PredictionGraph data={data} items={items} />
+                                <PredictionGraph data={data} items={items.filter(i => selectedItems.includes(i.value))} />
                             </CardContent>
                         </Card>
                     </div>
@@ -389,7 +452,7 @@ export default function Runescape() {
                                 <CardDescription>Jan 30 - Apr 30, 2025</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <PredictionGraph data={data} items={items} />
+                                <PredictionGraph data={data} items={items.filter(i => selectedItems.includes(i.value))} />
                             </CardContent>
                         </Card>
                     </div>

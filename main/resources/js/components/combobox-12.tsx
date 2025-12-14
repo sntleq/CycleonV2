@@ -24,6 +24,7 @@ type ComboboxProps = {
     options: ComboboxOption[]
     placeholder?: string
     label?: string
+    disabled?: boolean
 }
 
 const Combobox = ({
@@ -31,13 +32,15 @@ const Combobox = ({
                       onValueChange,
                       options,
                       placeholder = 'Select items',
-                      label
+                      label,
+                      disabled = false
                   }: ComboboxProps) => {
     const id = useId()
     const [open, setOpen] = useState(false)
     const [search, setSearch] = useState('')
 
     const toggleSelection = (optionValue: string) => {
+        if (disabled) return
         onValueChange(
             value.includes(optionValue)
                 ? value.filter(v => v !== optionValue)
@@ -56,7 +59,7 @@ const Combobox = ({
             <Popover
                 open={open}
                 onOpenChange={(o) => {
-                    setOpen(o)
+                    if (!disabled) setOpen(o)
                     if (!o) setSearch('')
                 }}
             >
@@ -66,7 +69,12 @@ const Combobox = ({
                         variant="outline"
                         role="combobox"
                         aria-expanded={open}
-                        className="h-auto min-h-8 w-full justify-between bg-transparent hover:bg-transparent"
+                        disabled={disabled}
+                        className={`h-auto min-h-8 w-full justify-between bg-transparent hover:bg-transparent
+                            ${
+                                disabled ? 'opacity-50 cursor-not-allowed' : ''
+                            }`
+                        }
                     >
                         {value.length > 1 ? (
                             <span>{value.length} items selected</span>
@@ -88,7 +96,7 @@ const Combobox = ({
                         <CommandInput
                             placeholder="Search items..."
                             value={search}
-                            onValueChange={setSearch}
+                            onValueChange={(val) => !disabled && setSearch(val)}
                         />
 
                         <CommandList>
@@ -100,7 +108,7 @@ const Combobox = ({
                                 {filteredOptions.map(option => (
                                     <CommandItem
                                         key={option.value}
-                                        value={option.label} // ← SEARCH MATCHES LABEL
+                                        value={option.label} // search matches label
                                         onSelect={() => toggleSelection(option.value)}
                                     >
                                         <span className="truncate">{option.label}</span>
