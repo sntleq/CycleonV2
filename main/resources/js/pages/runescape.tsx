@@ -35,6 +35,7 @@ import {
 import {useState} from "react";
 import {ScrollArea} from "@/components/ui/scroll-area";
 import {PredictionGraph} from "@/components/prediction-graph";
+import Combobox from "@/components/combobox-12";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -48,8 +49,14 @@ export default function Runescape() {
     const [averagePricePeriod, setAveragePricePeriod] = useState("day1");
     const [priceRisePeriod, setPriceRisePeriod] = useState("day1");
     const [priceFallPeriod, setPriceFallPeriod] = useState("day1");
+    const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
     const items: string[] = ["Item 1", "Item 2", "Item 3", "Item 4"];
+    const itemValues = [
+        { value: '10006', label: 'Red Partyhat' },
+        { value: '10007', label: 'Blue Partyhat' },
+        { value: '10008', label: 'Green Partyhat' },
+    ]
     const data = [
         { date: "2025-12-01", "Item 1": 385, "Item 2": 320, "Item 3": 324, "Item 4": 213 },
         { date: "2025-12-02", "Item 1": 438, "Item 2": 480, "Item 3": 280, "Item 4": 190 },
@@ -107,7 +114,7 @@ export default function Runescape() {
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
                             <H4>Item Trade Price Prediction</H4>
-                            <desc className="text-muted-foreground text-sm">Select items to see price history and prediction for up to 3 months!</desc>
+                            <desc className="text-muted-foreground text-sm">See price history and predictions for up to 8 items at once!</desc>
                         </div>
                         <Select
                             value={pricePredictPeriod}
@@ -128,20 +135,11 @@ export default function Runescape() {
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
                         <Card className="h-148">
                             <CardContent className="flex flex-col gap-6">
-                                <Select
-                                    value=""
-                                    onValueChange={setAveragePricePeriod} // custom function
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select an item" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="day1">Today</SelectItem>
-                                        <SelectItem value="day7">Last week</SelectItem>
-                                        <SelectItem value="day30">Last month</SelectItem>
-                                        <SelectItem value="day90">Last 3 months</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Combobox
+                                    value={selectedItems}
+                                    onValueChange={setSelectedItems}
+                                    options={itemValues}
+                                />
 
                                 <ScrollArea className="h-121 border rounded-md">
                                     {items.length > 0 ? (
@@ -205,7 +203,7 @@ export default function Runescape() {
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
                             <H4>Top Average Item Prices</H4>
-                            <desc className="text-muted-foreground text-sm">See Top 10 most valuable traded items by 180-day price average</desc>
+                            <desc className="text-muted-foreground text-sm">See most valuable traded items by daily price average</desc>
                         </div>
                         <Select
                             value={averagePricePeriod}
@@ -270,7 +268,7 @@ export default function Runescape() {
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
                             <H4>Top Item Price Rises</H4>
-                            <desc className="text-muted-foreground text-sm">See Top 10 price rises by average % increase of total price</desc>
+                            <desc className="text-muted-foreground text-sm">See highest price rises by average % increase of total price</desc>
                         </div>
                         <Select
                             value={priceRisePeriod}
@@ -335,7 +333,7 @@ export default function Runescape() {
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
                             <H4>Top Item Price Falls</H4>
-                            <desc className="text-muted-foreground text-sm">See Top 10 price falls by average % decrease of total price</desc>
+                            <desc className="text-muted-foreground text-sm">See highest price falls by average % decrease of total price</desc>
                         </div>
                         <Select
                             value={priceFallPeriod}
