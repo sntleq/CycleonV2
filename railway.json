@@ -2,10 +2,9 @@
     "$schema": "https://railway.com/railway.schema.json",
     "build": {
         "builder": "NIXPACKS",
-        "buildCommand": "composer install && npm install"
+        "buildCommand": "npm run dev"
     },
     "deploy": {
-        "preDeployCommand": "php artisan migrate:fresh --force",
-        "startCommand": "sh -c 'php artisan serve --host=0.0.0.0 --port=$PORT & npm run dev'"
+        "startCommand": ""
     }
 }
