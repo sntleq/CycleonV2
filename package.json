@@ -62,7 +62,8 @@
         "typescript": "^5.7.2",
         "vite": "7.1.11",
         "websocket": "^1.0.35",
-        "ws": "^8.18.3"
+        "ws": "^8.18.3",
+        "ziggy-js": "^2.6.0"
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.9.5",

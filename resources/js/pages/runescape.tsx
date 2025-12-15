@@ -1,7 +1,7 @@
 import { H3 } from '@/components/h3';
 import { H4 } from '@/components/h4';
 import AppLayout from '@/layouts/app-layout';
-import {runescape} from '@/routes';
+import { route } from 'ziggy-js';
 import { type BreadcrumbItem } from '@/types';
 import {Head} from '@inertiajs/react';
 import {Dot, LoaderCircle, X} from "lucide-react";
@@ -40,7 +40,7 @@ import Combobox from "@/components/combobox-12";
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Runescape',
-        href: runescape.url || '/runescape',
+        href: route('runescape'),
     },
 ];
 

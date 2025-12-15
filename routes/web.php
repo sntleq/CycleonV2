@@ -20,3 +20,5 @@ Route::prefix('api/runescape')->group(function () {
     Route::get('/predictions/{id}', [RunescapeController::class, 'predictions']);
     Route::options('/{any}', [RunescapeController::class, 'options'])->where('any', '.*');
 });
+
+
