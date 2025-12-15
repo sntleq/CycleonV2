@@ -19,9 +19,13 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    build: {
+        minify: false,
+    },
     resolve: {
         alias: {
             '@': '/resources/js', // Use this instead
         },
+
     },
 });
