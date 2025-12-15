@@ -17,6 +17,7 @@ COPY public ./public/
 
 # Install and build
 RUN npm ci
+RUN npx tsx scripts/generate-routes.ts
 RUN npm run build
 
 # Stage 2 - Backend (Laravel + PHP + Nginx)
