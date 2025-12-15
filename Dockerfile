@@ -2,15 +2,18 @@
 FROM node:20-alpine AS frontend
 WORKDIR /app
 
-# Copy package files
+# Copy all files needed for build
 COPY package*.json ./
-
-# Copy modified vite config (without wayfinder)
-COPY vite.config.build.ts ./vite.config.ts
-
-# Copy source files
+COPY *.ts ./
+COPY *.js ./
+COPY tsconfig.json ./
 COPY resources/ ./resources/
 COPY public/ ./public/
+
+# Create missing routes file if it doesn't exist
+RUN if [ ! -f /app/resources/js/routes.ts ]; then \
+    echo 'export const runescape = { index: "/runescape" };' > /app/resources/js/routes.ts; \
+    fi
 
 # Install and build
 RUN npm ci
