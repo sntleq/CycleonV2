@@ -2,7 +2,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build --config vite.config.build.ts",
+        "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
         "format": "prettier --write resources/",
@@ -62,8 +62,7 @@
         "typescript": "^5.7.2",
         "vite": "7.1.11",
         "websocket": "^1.0.35",
-        "ws": "^8.18.3",
-        "ziggy-js": "^2.6.0"
+        "ws": "^8.18.3"
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.9.5",

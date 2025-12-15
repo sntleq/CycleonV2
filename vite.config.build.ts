@@ -5,27 +5,18 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
-
 export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
-            refresh: false,
+            refresh: true,
         }),
         react(),
         tailwindcss(),
+        // REMOVED: wayfinder plugin for production build
     ],
     esbuild: {
         jsx: 'automatic',
-    },
-    build: {
-        minify: false,
-    },
-    resolve: {
-        alias: {
-            '@': '/resources/js', // Use this instead
-        },
-
     },
 });
