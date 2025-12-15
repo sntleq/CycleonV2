@@ -1,4 +1,4 @@
-
+// vite.config.build.ts
 // @ts-ignore
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -14,9 +14,13 @@ export default defineConfig({
         }),
         react(),
         tailwindcss(),
-        // REMOVED: wayfinder plugin for production build
     ],
     esbuild: {
         jsx: 'automatic',
+    },
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
     },
 });

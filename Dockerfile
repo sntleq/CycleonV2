@@ -8,9 +8,11 @@ COPY package*.json ./
 # Copy modified vite config (without wayfinder)
 COPY vite.config.build.ts ./vite.config.ts
 
-# Copy source files
+# Copy ALL source files including routes folder
 COPY resources/ ./resources/
 COPY public/ ./public/
+COPY tsconfig.json ./
+COPY vite.config.ts ./
 
 # Install and build
 RUN npm ci

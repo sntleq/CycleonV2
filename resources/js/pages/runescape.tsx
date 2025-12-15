@@ -103,7 +103,6 @@ export default function Runescape() {
         { date: "2025-12-13", "10006": 408, "10007": 450, "10008": 425, "10009": 390 },
     ];
 
-    // 1. Fetch items from API (Requirement #2)
     useEffect(() => {
         const fetchItems = async () => {
             try {
@@ -127,7 +126,6 @@ export default function Runescape() {
         fetchItems();
     }, []);
 
-    // 3. Fetch item details when selected items change (Requirement #3)
     useEffect(() => {
         const fetchItemDetails = async () => {
             if (selectedItems.length === 0) {
@@ -157,7 +155,6 @@ export default function Runescape() {
         fetchItemDetails();
     }, [selectedItems]);
 
-    // 6. Fetch predictions when selected items or period changes (Requirement #6)
     useEffect(() => {
         const fetchPredictions = async () => {
             if (selectedItems.length === 0) {
@@ -204,13 +201,6 @@ export default function Runescape() {
             try {
                 // Simulate API call delay
                 await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // In real app, you would fetch from API:
-                // const response = await fetch(`/api/runescape/average-prices?period=${averagePricePeriod}`);
-                // const data = await response.json();
-                // setAveragePricesData(data);
-
-                // For now, use empty array to show loading state
                 setAveragePricesData([]);
             } catch (error) {
                 console.error('Failed to fetch average prices:', error);
