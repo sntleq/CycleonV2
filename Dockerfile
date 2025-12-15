@@ -16,6 +16,12 @@ COPY vite.config.ts ./
 
 # Install and build
 RUN npm ci
+
+# Debug: List the files
+RUN ls -la /app/resources/js/
+RUN ls -la /app/resources/js/routes/
+
+# Then build
 RUN npm run build
 
 # Stage 2 - Backend (Laravel + PHP + Nginx)
