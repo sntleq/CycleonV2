@@ -63,7 +63,7 @@ class RunescapeController extends Controller
     public function predictions(string $id): JsonResponse
     {
         try {
-            $period = request()->query('period', '30'); // Default to 30 days
+            $period = request()->query('period', '30');
 
             $response = Http::timeout(15)
                 ->withOptions(['verify' => false])
@@ -74,6 +74,48 @@ class RunescapeController extends Controller
         } catch (\Exception $e) {
             return $this->addCorsHeaders(response()->json([
                 'error' => 'Failed to fetch predictions'
+            ], 500));
+        }
+    }
+
+    /**
+     * Proxy for /rankings/price endpoint
+     */
+    public function rankings(): JsonResponse
+    {
+        try {
+            $n = request()->query('n', 8);
+
+            $response = Http::timeout(15)
+                ->withOptions(['verify' => false])
+                ->get(self::BASE_URL . "/rankings/price?n={$n}");
+
+            return $this->addCorsHeaders(response()->json($response->json(), $response->status()));
+
+        } catch (\Exception $e) {
+            return $this->addCorsHeaders(response()->json([
+                'error' => 'Failed to fetch rankings'
+            ], 500));
+        }
+    }
+
+    /**
+     * Proxy for /rankings/volume endpoint
+     */
+    public function topTrades(): JsonResponse
+    {
+        try {
+            $n = request()->query('n', 8);
+
+            $response = Http::timeout(15)
+                ->withOptions(['verify' => false])
+                ->get(self::BASE_URL . "/rankings/volume?n={$n}");
+
+            return $this->addCorsHeaders(response()->json($response->json(), $response->status()));
+
+        } catch (\Exception $e) {
+            return $this->addCorsHeaders(response()->json([
+                'error' => 'Failed to fetch top trades'
             ], 500));
         }
     }

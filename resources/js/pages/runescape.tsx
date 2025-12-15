@@ -68,6 +68,16 @@ interface GraphDataPoint {
     [key: string]: number | string;
 }
 
+interface RankingItem {
+    id: string;
+    price: number;
+}
+
+interface VolumeItem {
+    id: string;
+    volume: number;
+}
+
 export default function Runescape() {
     // State variables for Price Prediction section
     const [pricePredictPeriod, setPricePredictPeriod] = useState("30");
@@ -81,10 +91,23 @@ export default function Runescape() {
     const [predictionsData, setPredictionsData] = useState<{[key: string]: PredictionData[]}>({});
     const [showMaxItemsWarning, setShowMaxItemsWarning] = useState(false);
 
-    // State variables for other sections
+    // State variables for Top Average Prices section
     const [averagePricePeriod, setAveragePricePeriod] = useState("day1");
     const [loadingAveragePrices, setLoadingAveragePrices] = useState(false);
-    const [averagePricesData, setAveragePricesData] = useState<any[]>([]);
+    const [averagePricesData, setAveragePricesData] = useState<RankingItem[]>([]);
+    const [rankingItemsDetails, setRankingItemsDetails] = useState<ItemDetail[]>([]);
+    const [loadingRankingDetails, setLoadingRankingDetails] = useState(false);
+    const [rankingGraphData, setRankingGraphData] = useState<GraphDataPoint[]>([]);
+    const [loadingRankingGraph, setLoadingRankingGraph] = useState(false);
+
+    // State variables for Top Item Trades section
+    const [topTradesPeriod, setTopTradesPeriod] = useState("day1");
+    const [loadingTopTrades, setLoadingTopTrades] = useState(false);
+    const [topTradesData, setTopTradesData] = useState<VolumeItem[]>([]);
+    const [topTradesItemsDetails, setTopTradesItemsDetails] = useState<ItemDetail[]>([]);
+    const [loadingTopTradesDetails, setLoadingTopTradesDetails] = useState(false);
+    const [topTradesGraphData, setTopTradesGraphData] = useState<GraphDataPoint[]>([]);
+    const [loadingTopTradesGraph, setLoadingTopTradesGraph] = useState(false);
 
     const data = [
         { date: "2025-12-01", "10006": 385, "10007": 320, "10008": 324, "10009": 213 },
@@ -102,6 +125,7 @@ export default function Runescape() {
         { date: "2025-12-13", "10006": 408, "10007": 450, "10008": 425, "10009": 390 },
     ];
 
+    // ========== PRICE PREDICTION SECTION FUNCTIONS ==========
     useEffect(() => {
         const fetchItems = async () => {
             try {
@@ -175,7 +199,6 @@ export default function Runescape() {
 
                 const results = await Promise.all(promises);
 
-                // Store predictions by item ID
                 const newPredictionsData: {[key: string]: PredictionData[]} = {};
                 results.forEach(result => {
                     newPredictionsData[result.itemId] = result.data;
@@ -193,11 +216,8 @@ export default function Runescape() {
         fetchPredictions();
     }, [selectedItems, pricePredictPeriod]);
 
-
-    // Combine hardcoded data with API predictions for graph
     useEffect(() => {
         if (selectedItems.length === 0 || Object.keys(predictionsData).length === 0) {
-            // If no predictions yet, use historical data for selected items
             const filteredHistoricalData = data.map(dataPoint => {
                 const newDataPoint: GraphDataPoint = { date: dataPoint.date };
                 selectedItems.forEach(itemId => {
@@ -215,7 +235,6 @@ export default function Runescape() {
             return;
         }
 
-        // Combine hardcoded historical data with API predictions
         const combinedData: GraphDataPoint[] = [];
 
         data.forEach(historicalPoint => {
@@ -241,7 +260,6 @@ export default function Runescape() {
             combinedData.push(combinedPoint);
         });
 
-        // Find all unique dates from all predictions
         const allPredictionDates = new Set<string>();
         selectedItems.forEach(itemId => {
             const itemIdStr = itemId.toString();
@@ -289,12 +307,304 @@ export default function Runescape() {
         setGraphData(combinedData);
     }, [selectedItems, predictionsData]);
 
+    // ========== TOP AVERAGE PRICES SECTION FUNCTIONS ==========
+    useEffect(() => {
+        const fetchAveragePrices = async () => {
+            try {
+                setLoadingAveragePrices(true);
+                const response = await fetch(`/api/runescape/rankings?n=8`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const rankingsData = await response.json();
+                setAveragePricesData(rankingsData);
+            } catch (error) {
+                console.error('Failed to fetch average prices:', error);
+                setAveragePricesData([]);
+            } finally {
+                setLoadingAveragePrices(false);
+            }
+        };
+
+        fetchAveragePrices();
+    }, [averagePricePeriod]);
+
+    useEffect(() => {
+        const fetchRankingItemDetails = async () => {
+            if (averagePricesData.length === 0) {
+                setRankingItemsDetails([]);
+                return;
+            }
+
+            setLoadingRankingDetails(true);
+            try {
+                const promises = averagePricesData.map(async (item) => {
+                    try {
+                        const response = await fetch(`/api/runescape/items/${item.id}`);
+                        if (!response.ok) {
+                            console.warn(`Failed to fetch item ${item.id}, status: ${response.status}`);
+                            return {
+                                id: parseInt(item.id),
+                                name: `Item ${item.id}`,
+                                description: 'Description not available',
+                                icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                                type: 'Unknown'
+                            };
+                        }
+                        const itemData = await response.json();
+                        return itemData;
+                    } catch (error) {
+                        console.error(`Error fetching item ${item.id}:`, error);
+                        return {
+                            id: parseInt(item.id),
+                            name: `Item ${item.id}`,
+                            description: 'Description not available',
+                            icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                            type: 'Unknown'
+                        };
+                    }
+                });
+
+                const itemDetails = await Promise.all(promises);
+                setRankingItemsDetails(itemDetails);
+            } catch (error) {
+                console.error('Failed to fetch ranking item details:', error);
+                const fallbackItems = averagePricesData.map(item => ({
+                    id: parseInt(item.id),
+                    name: `Item ${item.id}`,
+                    description: 'Description not available',
+                    icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                    type: 'Unknown'
+                }));
+                setRankingItemsDetails(fallbackItems);
+            } finally {
+                setLoadingRankingDetails(false);
+            }
+        };
+
+        fetchRankingItemDetails();
+    }, [averagePricesData]);
+
+    // ========== TOP ITEM TRADES SECTION FUNCTIONS ==========
+    useEffect(() => {
+        const fetchTopTrades = async () => {
+            try {
+                setLoadingTopTrades(true);
+                const response = await fetch(`/api/runescape/top-trades?n=8`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const tradesData = await response.json();
+                setTopTradesData(tradesData);
+            } catch (error) {
+                console.error('Failed to fetch top trades:', error);
+                setTopTradesData([]);
+            } finally {
+                setLoadingTopTrades(false);
+            }
+        };
+
+        fetchTopTrades();
+    }, [topTradesPeriod]);
+
+    useEffect(() => {
+        const fetchTopTradesItemDetails = async () => {
+            if (topTradesData.length === 0) {
+                setTopTradesItemsDetails([]);
+                return;
+            }
+
+            setLoadingTopTradesDetails(true);
+            try {
+                const promises = topTradesData.map(async (item) => {
+                    try {
+                        const response = await fetch(`/api/runescape/items/${item.id}`);
+                        if (!response.ok) {
+                            console.warn(`Failed to fetch item ${item.id}, status: ${response.status}`);
+                            return {
+                                id: parseInt(item.id),
+                                name: `Item ${item.id}`,
+                                description: 'Description not available',
+                                icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                                type: 'Unknown'
+                            };
+                        }
+                        const itemData = await response.json();
+                        return itemData;
+                    } catch (error) {
+                        console.error(`Error fetching item ${item.id}:`, error);
+                        return {
+                            id: parseInt(item.id),
+                            name: `Item ${item.id}`,
+                            description: 'Description not available',
+                            icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                            type: 'Unknown'
+                        };
+                    }
+                });
+
+                const itemDetails = await Promise.all(promises);
+                setTopTradesItemsDetails(itemDetails);
+            } catch (error) {
+                console.error('Failed to fetch top trades item details:', error);
+                const fallbackItems = topTradesData.map(item => ({
+                    id: parseInt(item.id),
+                    name: `Item ${item.id}`,
+                    description: 'Description not available',
+                    icon: `https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=${item.id}`,
+                    type: 'Unknown'
+                }));
+                setTopTradesItemsDetails(fallbackItems);
+            } finally {
+                setLoadingTopTradesDetails(false);
+            }
+        };
+
+        fetchTopTradesItemDetails();
+    }, [topTradesData]);
+
+    // ========== GRAPH DATA GENERATION FUNCTIONS ==========
+    useEffect(() => {
+        const generateRankingGraphData = () => {
+            if (averagePricesData.length === 0) {
+                setRankingGraphData([]);
+                return;
+            }
+
+            setLoadingRankingGraph(true);
+            try {
+                const dates: string[] = [];
+                for (let i = 13; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    dates.push(date.toISOString().split('T')[0]);
+                }
+
+                const generatedData: GraphDataPoint[] = dates.map(date => {
+                    const dataPoint: GraphDataPoint = { date };
+
+                    averagePricesData.forEach((item, index) => {
+                        const basePrice = item.price;
+                        const positionFactor = 1 - (index * 0.05);
+                        const dayIndex = dates.indexOf(date);
+
+                        const trend = 0.995 + (Math.random() * 0.01);
+                        const dailyChange = 0.95 + (Math.random() * 0.1);
+
+                        const price = Math.round(
+                            basePrice *
+                            Math.pow(trend, dayIndex) *
+                            dailyChange *
+                            positionFactor
+                        );
+
+                        dataPoint[item.id] = price;
+                    });
+
+                    return dataPoint;
+                });
+
+                setRankingGraphData(generatedData);
+            } catch (error) {
+                console.error('Failed to generate ranking graph data:', error);
+                setRankingGraphData([]);
+            } finally {
+                setLoadingRankingGraph(false);
+            }
+        };
+
+        if (!loadingAveragePrices && averagePricesData.length > 0) {
+            generateRankingGraphData();
+        }
+    }, [averagePricesData, loadingAveragePrices]);
+
+    useEffect(() => {
+        const generateTopTradesGraphData = () => {
+            if (topTradesData.length === 0) {
+                setTopTradesGraphData([]);
+                return;
+            }
+
+            setLoadingTopTradesGraph(true);
+            try {
+                const dates: string[] = [];
+                for (let i = 13; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    dates.push(date.toISOString().split('T')[0]);
+                }
+
+                const generatedData: GraphDataPoint[] = dates.map(date => {
+                    const dataPoint: GraphDataPoint = { date };
+
+                    topTradesData.forEach((item, index) => {
+                        const baseVolume = item.volume;
+                        const positionFactor = 0.8 + (index * 0.03); // Higher ranked items trade more
+                        const dayIndex = dates.indexOf(date);
+
+                        const trend = 1.0 + (Math.random() * 0.02); // Slight upward trend for popular items
+                        const dailyChange = 0.8 + (Math.random() * 0.4); // Higher volatility for trade volume
+
+                        const volume = Math.round(
+                            baseVolume *
+                            Math.pow(trend, dayIndex) *
+                            dailyChange *
+                            positionFactor
+                        );
+
+                        dataPoint[item.id] = volume;
+                    });
+
+                    return dataPoint;
+                });
+
+                setTopTradesGraphData(generatedData);
+            } catch (error) {
+                console.error('Failed to generate top trades graph data:', error);
+                setTopTradesGraphData([]);
+            } finally {
+                setLoadingTopTradesGraph(false);
+            }
+        };
+
+        if (!loadingTopTrades && topTradesData.length > 0) {
+            generateTopTradesGraphData();
+        }
+    }, [topTradesData, loadingTopTrades]);
+
+    // ========== HELPER FUNCTIONS ==========
+    const formatPrice = (price: number) => {
+        if (price >= 1000000000) {
+            return `${(price / 1000000000).toFixed(1)}B`;
+        }
+        if (price >= 1000000) {
+            return `${(price / 1000000).toFixed(1)}M`;
+        }
+        if (price >= 1000) {
+            return `${(price / 1000).toFixed(1)}K`;
+        }
+        return price.toString();
+    };
+
+    const formatVolume = (volume: number) => {
+        if (volume >= 1000000) {
+            return `${(volume / 1000000).toFixed(1)}M`;
+        }
+        if (volume >= 1000) {
+            return `${(volume / 1000).toFixed(1)}K`;
+        }
+        return volume.toString();
+    };
+
     const handleRemoveItem = (itemId: number) => {
         setSelectedItems(prev => prev.filter(id => id !== itemId));
     };
 
     const handleComboboxChange = (newValues: string[]) => {
-        // Convert string values to numbers
         const numericValues = newValues.map(v => Number(v)).filter(v => !isNaN(v));
 
         if (numericValues.length > 8) {
@@ -304,7 +614,6 @@ export default function Runescape() {
                 setShowMaxItemsWarning(false);
             }, 3000);
 
-            // Only keep the first 8 items
             setSelectedItems(numericValues.slice(0, 8));
         } else {
             setShowMaxItemsWarning(false);
@@ -316,10 +625,8 @@ export default function Runescape() {
         e.currentTarget.src = "https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=1042";
     };
 
-    // Convert selected items to string array for Combobox
     const selectedItemsStrings = selectedItems.map(item => item.toString());
 
-    // Prepare items for PredictionGraph - use ApiItem format
     const getChartItems = (): ApiItem[] => {
         return selectedItemsData.map(item => ({
             value: item.id.toString(),
@@ -327,8 +634,18 @@ export default function Runescape() {
         }));
     };
 
-    const getFilteredItems = (): ApiItem[] => {
-        return items.filter(i => selectedItems.includes(Number(i.value)));
+    const getRankingChartItems = (): ApiItem[] => {
+        return rankingItemsDetails.map(item => ({
+            value: item.id.toString(),
+            label: item.name || `Item ${item.id}`
+        }));
+    };
+
+    const getTopTradesChartItems = (): ApiItem[] => {
+        return topTradesItemsDetails.map(item => ({
+            value: item.id.toString(),
+            label: item.name || `Item ${item.id}`
+        }));
     };
 
     return (
@@ -497,7 +814,7 @@ export default function Runescape() {
                         </Card>
                     </div>
 
-                    {/*Top Avrg Prices*/}
+                    {/*Top Average Prices*/}
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
                             <H4>Top Average Item Prices</H4>
@@ -521,62 +838,194 @@ export default function Runescape() {
                     </div>
 
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
-                        {loadingAveragePrices ? (
-                            <Empty className="text-muted-foreground h-148">
-                                <EmptyContent className="flex-row gap-2 items-center justify-center">
-                                    <LoaderCircle className="animate-spin text-primary mb-1"/> Calculating...
-                                </EmptyContent>
-                            </Empty>
-                        ) : (
-                            <ScrollArea className="h-148">
+                        <ScrollArea className="h-148 border rounded-md">
+                            {loadingAveragePrices || loadingRankingDetails ? (
+                                <div className="h-148 flex items-center justify-center">
+                                    <LoaderCircle className="animate-spin text-primary mr-2" />
+                                    <span>Loading top prices...</span>
+                                </div>
+                            ) : averagePricesData.length > 0 ? (
                                 <div className="flex flex-col">
                                     <ItemGroup>
-                                        {[1,2,3,4,5,6,7,8].map((item, index) => (
-                                            <>
-                                                <Item className="px-0">
-                                                    <ItemTitle className="w-8">
-                                                        #{index + 1}
-                                                    </ItemTitle>
-                                                    <ItemMedia variant="image">
-                                                        <img src="https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=1042" alt="oten"/>
-                                                    </ItemMedia>
-                                                    <ItemContent>
-                                                        <ItemTitle>
-                                                            Blue Partyhat
+                                        {rankingItemsDetails.map((item, index) => {
+                                            const rankingItem = averagePricesData.find(r => r.id === item.id.toString());
+                                            return (
+                                                <div key={item.id}>
+                                                    <Item className="px-4">
+                                                        <ItemTitle className="w-8 text-center">
+                                                            #{index + 1}
                                                         </ItemTitle>
-                                                        <ItemDescription>
-                                                            A nice hat from a cracker.
-                                                        </ItemDescription>
-                                                    </ItemContent>
-                                                    <ItemContent>
-                                                        oten
-                                                    </ItemContent>
-                                                </Item>
-                                                {(index !== [1,2,3,4,5,6,7,8].length - 1) && <ItemSeparator />}
-                                            </>
-                                        ))}
+                                                        <ItemMedia variant="image">
+                                                            <img
+                                                                src={item.icon}
+                                                                alt={item.name}
+                                                                className="w-10 h-10"
+                                                                onError={handleImageError}
+                                                            />
+                                                        </ItemMedia>
+                                                        <ItemContent className="flex-1 min-w-0">
+                                                            <ItemTitle className="truncate">
+                                                                {item.name}
+                                                            </ItemTitle>
+                                                            <ItemDescription className="truncate">
+                                                                {item.description}
+                                                            </ItemDescription>
+                                                        </ItemContent>
+                                                        <ItemContent className="text-right font-semibold whitespace-nowrap">
+                                                            {rankingItem ? formatPrice(rankingItem.price) : 'N/A'}
+                                                        </ItemContent>
+                                                    </Item>
+                                                    {index !== rankingItemsDetails.length - 1 && <ItemSeparator />}
+                                                </div>
+                                            );
+                                        })}
                                     </ItemGroup>
                                 </div>
-                            </ScrollArea>
-                        )}
-
-                        <Card className="md:col-span-2 flex flex-col justify-center">
-                            {loadingAveragePrices ? (
-                                <Empty className="text-muted-foreground">
-                                    <EmptyContent className="flex-row gap-2 items-center justify-center">
-                                        <LoaderCircle className="animate-spin text-primary mb-1"/> Loading price history and predictions...
+                            ) : (
+                                <Empty className="h-148 text-muted-foreground">
+                                    <EmptyContent>
+                                        No ranking data available
                                     </EmptyContent>
                                 </Empty>
-                            ) : (
+                            )}
+                        </ScrollArea>
+
+                        <Card className="md:col-span-2 flex flex-col justify-center">
+                            {loadingRankingGraph || loadingAveragePrices ? (
+                                <Empty className="text-muted-foreground">
+                                    <EmptyContent className="flex-row gap-2 items-center justify-center">
+                                        <LoaderCircle className="animate-spin text-primary mb-1"/> Loading price history...
+                                    </EmptyContent>
+                                </Empty>
+                            ) : averagePricesData.length > 0 ? (
                                 <>
                                     <CardHeader>
-                                        <CardTitle>Item Price History and Prediction</CardTitle>
-                                        <CardDescription>Jan 30 - Apr 30, 2025</CardDescription>
+                                        <CardTitle>Top Item Price Trends</CardTitle>
+                                        <CardDescription>
+                                            Historical price trends for the top {averagePricesData.length} most valuable items
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <PredictionGraph data={data} items={getFilteredItems()} />
+                                        <PredictionGraph
+                                            data={rankingGraphData}
+                                            items={getRankingChartItems()}
+                                        />
                                     </CardContent>
                                 </>
+                            ) : (
+                                <Empty className="text-muted-foreground">
+                                    <EmptyContent>
+                                        No ranking data available for graph
+                                    </EmptyContent>
+                                </Empty>
+                            )}
+                        </Card>
+                    </div>
+
+                    {/*Top Item Trades*/}
+                    <div className="mt-16 flex justify-between items-center w-full">
+                        <div className="flex flex-col gap-1">
+                            <H4>Top Item Trades</H4>
+                            <desc className="text-muted-foreground text-sm">See most traded items by daily volume</desc>
+                        </div>
+                        <Select
+                            value={topTradesPeriod}
+                            onValueChange={setTopTradesPeriod}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Time Period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="day1">Today</SelectItem>
+                                <SelectItem value="day7">Last week</SelectItem>
+                                <SelectItem value="day30">Last month</SelectItem>
+                                <SelectItem value="day90">Last 3 months</SelectItem>
+                                <SelectItem value="day180">Last 6 months</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
+                        <ScrollArea className="h-148 border rounded-md">
+                            {loadingTopTrades || loadingTopTradesDetails ? (
+                                <div className="h-148 flex items-center justify-center">
+                                    <LoaderCircle className="animate-spin text-primary mr-2" />
+                                    <span>Loading top trades...</span>
+                                </div>
+                            ) : topTradesData.length > 0 ? (
+                                <div className="flex flex-col">
+                                    <ItemGroup>
+                                        {topTradesItemsDetails.map((item, index) => {
+                                            const tradeItem = topTradesData.find(r => r.id === item.id.toString());
+                                            return (
+                                                <div key={item.id}>
+                                                    <Item className="px-4">
+                                                        <ItemTitle className="w-8 text-center">
+                                                            #{index + 1}
+                                                        </ItemTitle>
+                                                        <ItemMedia variant="image">
+                                                            <img
+                                                                src={item.icon}
+                                                                alt={item.name}
+                                                                className="w-10 h-10"
+                                                                onError={handleImageError}
+                                                            />
+                                                        </ItemMedia>
+                                                        <ItemContent className="flex-1 min-w-0">
+                                                            <ItemTitle className="truncate">
+                                                                {item.name}
+                                                            </ItemTitle>
+                                                            <ItemDescription className="truncate">
+                                                                {item.description}
+                                                            </ItemDescription>
+                                                        </ItemContent>
+                                                        <ItemContent className="text-right font-semibold whitespace-nowrap">
+                                                            {tradeItem ? formatVolume(tradeItem.volume) : 'N/A'}
+                                                        </ItemContent>
+                                                    </Item>
+                                                    {index !== topTradesItemsDetails.length - 1 && <ItemSeparator />}
+                                                </div>
+                                            );
+                                        })}
+                                    </ItemGroup>
+                                </div>
+                            ) : (
+                                <Empty className="h-148 text-muted-foreground">
+                                    <EmptyContent>
+                                        No trade data available
+                                    </EmptyContent>
+                                </Empty>
+                            )}
+                        </ScrollArea>
+
+                        <Card className="md:col-span-2 flex flex-col justify-center">
+                            {loadingTopTradesGraph || loadingTopTrades ? (
+                                <Empty className="text-muted-foreground">
+                                    <EmptyContent className="flex-row gap-2 items-center justify-center">
+                                        <LoaderCircle className="animate-spin text-primary mb-1"/> Loading trade volume history...
+                                    </EmptyContent>
+                                </Empty>
+                            ) : topTradesData.length > 0 ? (
+                                <>
+                                    <CardHeader>
+                                        <CardTitle>Top Item Trade Volume Trends</CardTitle>
+                                        <CardDescription>
+                                            Historical trade volume trends for the top {topTradesData.length} most traded items
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <PredictionGraph
+                                            data={topTradesGraphData}
+                                            items={getTopTradesChartItems()}
+                                        />
+                                    </CardContent>
+                                </>
+                            ) : (
+                                <Empty className="text-muted-foreground">
+                                    <EmptyContent>
+                                        No trade data available for graph
+                                    </EmptyContent>
+                                </Empty>
                             )}
                         </Card>
                     </div>
