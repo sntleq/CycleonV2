@@ -11,11 +11,10 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
-            refresh: true,
+            refresh: false,
         }),
         react(),
         tailwindcss(),
-        // REMOVED: wayfinder plugin for production build
     ],
     esbuild: {
         jsx: 'automatic',
