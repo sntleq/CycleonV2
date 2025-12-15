@@ -20,6 +20,3 @@ Route::prefix('api/runescape')->group(function () {
     Route::get('/predictions/{id}', [RunescapeController::class, 'predictions']);
     Route::options('/{any}', [RunescapeController::class, 'options'])->where('any', '.*');
 });
-
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
