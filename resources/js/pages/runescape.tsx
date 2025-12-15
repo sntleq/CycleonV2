@@ -40,7 +40,7 @@ import Combobox from "@/components/combobox-12";
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Runescape',
-        href: runescape().url,
+        href: runescape.url || '/runescape',
     },
 ];
 
