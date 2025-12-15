@@ -622,7 +622,7 @@ export default function Runescape() {
     };
 
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        e.currentTarget.src = "https://secure.runescape.com/m=itemdb_rs/1765192585985_obj_sprite.gif?id=1042";
+        e.currentTarget.src = "/favicon.svg";
     };
 
     const selectedItemsStrings = selectedItems.map(item => item.toString());
@@ -712,26 +712,21 @@ export default function Runescape() {
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
                         <Card className="h-148">
                             <CardContent className="flex flex-col gap-6">
-                                {loadingItems ? (
-                                    <div className="flex items-center justify-center py-4">
-                                        <LoaderCircle className="animate-spin text-primary mr-2" />
-                                        <span>Loading items...</span>
-                                    </div>
-                                ) : (
-                                    <Combobox
-                                        value={selectedItemsStrings}
-                                        onValueChange={handleComboboxChange}
-                                        options={items}
-                                        placeholder="Select items (max 8)"
-                                    />
-                                )}
+                                <Combobox
+                                    value={selectedItemsStrings}
+                                    onValueChange={handleComboboxChange}
+                                    options={items}
+                                    disabled={loadingItems}
+                                    placeholder={loadingItems ? 'Loading items...' : 'Select items (max 8)'}
+                                />
 
                                 <ScrollArea className="h-120 border rounded-md">
                                     {loadingItemDetails ? (
-                                        <div className="h-121 flex items-center justify-center">
-                                            <LoaderCircle className="animate-spin text-primary mr-2" />
-                                            <span>Loading item details...</span>
-                                        </div>
+                                        <Empty className="text-muted-foreground h-119">
+                                            <EmptyContent className="flex-row gap-2 items-center justify-center">
+                                                <LoaderCircle className="animate-spin text-primary mb-1"/> Fetching item details...
+                                            </EmptyContent>
+                                        </Empty>
                                     ) : selectedItemsData.length > 0 ? (
                                         <div className="flex flex-col">
                                             <ItemGroup>
@@ -770,9 +765,9 @@ export default function Runescape() {
                                             </ItemGroup>
                                         </div>
                                     ) : (
-                                        <Empty className="h-121 text-muted-foreground">
+                                        <Empty className="h-119 text-muted-foreground">
                                             <EmptyContent>
-                                                {loadingItems ? 'Loading items...' : 'No items selected'}
+                                                No items selected
                                             </EmptyContent>
                                         </Empty>
                                     )}
@@ -838,12 +833,13 @@ export default function Runescape() {
                     </div>
 
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
-                        <ScrollArea className="h-148 border rounded-md">
+                        <ScrollArea className="h-148">
                             {loadingAveragePrices || loadingRankingDetails ? (
-                                <div className="h-148 flex items-center justify-center">
-                                    <LoaderCircle className="animate-spin text-primary mr-2" />
-                                    <span>Loading top prices...</span>
-                                </div>
+                                <Empty className="text-muted-foreground h-148">
+                                    <EmptyContent className="flex-row gap-2 items-center justify-center">
+                                        <LoaderCircle className="animate-spin text-primary mb-1"/> Fetching prices...
+                                    </EmptyContent>
+                                </Empty>
                             ) : averagePricesData.length > 0 ? (
                                 <div className="flex flex-col">
                                     <ItemGroup>
@@ -851,7 +847,7 @@ export default function Runescape() {
                                             const rankingItem = averagePricesData.find(r => r.id === item.id.toString());
                                             return (
                                                 <div key={item.id}>
-                                                    <Item className="px-4">
+                                                    <Item className="">
                                                         <ItemTitle className="w-8 text-center">
                                                             #{index + 1}
                                                         </ItemTitle>
@@ -871,7 +867,7 @@ export default function Runescape() {
                                                                 {item.description}
                                                             </ItemDescription>
                                                         </ItemContent>
-                                                        <ItemContent className="text-right font-semibold whitespace-nowrap">
+                                                        <ItemContent className="pl-4 text-right font-semibold whitespace-nowrap">
                                                             {rankingItem ? formatPrice(rankingItem.price) : 'N/A'}
                                                         </ItemContent>
                                                     </Item>
@@ -891,7 +887,7 @@ export default function Runescape() {
                         </ScrollArea>
 
                         <Card className="md:col-span-2 flex flex-col justify-center">
-                            {loadingRankingGraph || loadingAveragePrices ? (
+                            {loadingRankingGraph || loadingAveragePrices || loadingRankingDetails ? (
                                 <Empty className="text-muted-foreground">
                                     <EmptyContent className="flex-row gap-2 items-center justify-center">
                                         <LoaderCircle className="animate-spin text-primary mb-1"/> Loading price history...
@@ -946,12 +942,13 @@ export default function Runescape() {
                     </div>
 
                     <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
-                        <ScrollArea className="h-148 border rounded-md">
+                        <ScrollArea className="h-148">
                             {loadingTopTrades || loadingTopTradesDetails ? (
-                                <div className="h-148 flex items-center justify-center">
-                                    <LoaderCircle className="animate-spin text-primary mr-2" />
-                                    <span>Loading top trades...</span>
-                                </div>
+                                <Empty className="text-muted-foreground h-148">
+                                    <EmptyContent className="flex-row gap-2 items-center justify-center">
+                                        <LoaderCircle className="animate-spin text-primary mb-1"/> Fetching volumes...
+                                    </EmptyContent>
+                                </Empty>
                             ) : topTradesData.length > 0 ? (
                                 <div className="flex flex-col">
                                     <ItemGroup>
@@ -959,7 +956,7 @@ export default function Runescape() {
                                             const tradeItem = topTradesData.find(r => r.id === item.id.toString());
                                             return (
                                                 <div key={item.id}>
-                                                    <Item className="px-4">
+                                                    <Item className="">
                                                         <ItemTitle className="w-8 text-center">
                                                             #{index + 1}
                                                         </ItemTitle>
@@ -979,7 +976,7 @@ export default function Runescape() {
                                                                 {item.description}
                                                             </ItemDescription>
                                                         </ItemContent>
-                                                        <ItemContent className="text-right font-semibold whitespace-nowrap">
+                                                        <ItemContent className="pl-4 text-right font-semibold whitespace-nowrap">
                                                             {tradeItem ? formatVolume(tradeItem.volume) : 'N/A'}
                                                         </ItemContent>
                                                     </Item>
@@ -999,7 +996,7 @@ export default function Runescape() {
                         </ScrollArea>
 
                         <Card className="md:col-span-2 flex flex-col justify-center">
-                            {loadingTopTradesGraph || loadingTopTrades ? (
+                            {loadingTopTradesGraph || loadingTopTrades || loadingTopTradesDetails ? (
                                 <Empty className="text-muted-foreground">
                                     <EmptyContent className="flex-row gap-2 items-center justify-center">
                                         <LoaderCircle className="animate-spin text-primary mb-1"/> Loading trade volume history...
