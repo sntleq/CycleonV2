@@ -14,11 +14,9 @@ COPY tsconfig.json ./
 # Copy ALL source files including hidden ones
 COPY resources ./resources/
 COPY public ./public/
-COPY scripts ./scripts/
 
 # Install and build
 RUN npm ci
-RUN npx tsx scripts/generate-routes.ts
 RUN npm run build
 
 # Stage 2 - Backend (Laravel + PHP + Nginx)
