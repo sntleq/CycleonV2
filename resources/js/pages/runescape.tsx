@@ -1,7 +1,7 @@
 import { H3 } from '@/components/h3';
 import { H4 } from '@/components/h4';
 import AppLayout from '@/layouts/app-layout';
-import {runescape} from '@/routes';
+import {runescape} from '@/routes/index';
 import { type BreadcrumbItem } from '@/types';
 import {Head} from '@inertiajs/react';
 import {Dot, LoaderCircle, X} from "lucide-react";
