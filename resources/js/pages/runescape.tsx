@@ -1,7 +1,7 @@
 import { H3 } from '@/components/h3';
 import { H4 } from '@/components/h4';
 import AppLayout from '@/layouts/app-layout';
-import {runescape} from '@/routes/index';
+import {runescape} from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import {Head} from '@inertiajs/react';
 import {Dot, LoaderCircle, X} from "lucide-react";
@@ -86,7 +86,6 @@ export default function Runescape() {
     const [loadingAveragePrices, setLoadingAveragePrices] = useState(false);
     const [averagePricesData, setAveragePricesData] = useState<any[]>([]);
 
-    // Hardcoded historical data (13 days before today)
     const data = [
         { date: "2025-12-01", "10006": 385, "10007": 320, "10008": 324, "10009": 213 },
         { date: "2025-12-02", "10006": 438, "10007": 480, "10008": 280, "10009": 190 },
@@ -194,24 +193,6 @@ export default function Runescape() {
         fetchPredictions();
     }, [selectedItems, pricePredictPeriod]);
 
-    // Fetch average prices data
-    useEffect(() => {
-        const fetchAveragePrices = async () => {
-            setLoadingAveragePrices(true);
-            try {
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                setAveragePricesData([]);
-            } catch (error) {
-                console.error('Failed to fetch average prices:', error);
-                setAveragePricesData([]);
-            } finally {
-                setLoadingAveragePrices(false);
-            }
-        };
-
-        fetchAveragePrices();
-    }, [averagePricePeriod]);
 
     // Combine hardcoded data with API predictions for graph
     useEffect(() => {
@@ -317,10 +298,8 @@ export default function Runescape() {
         const numericValues = newValues.map(v => Number(v)).filter(v => !isNaN(v));
 
         if (numericValues.length > 8) {
-            // Show warning when trying to select 9th item
             setShowMaxItemsWarning(true);
 
-            // Auto-hide the warning after 3 seconds
             setTimeout(() => {
                 setShowMaxItemsWarning(false);
             }, 3000);
@@ -348,7 +327,6 @@ export default function Runescape() {
         }));
     };
 
-    // Helper function to filter items for other sections
     const getFilteredItems = (): ApiItem[] => {
         return items.filter(i => selectedItems.includes(Number(i.value)));
     };

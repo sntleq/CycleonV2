@@ -1,4 +1,4 @@
-// vite.config.build.ts
+
 // @ts-ignore
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -17,10 +17,5 @@ export default defineConfig({
     ],
     esbuild: {
         jsx: 'automatic',
-    },
-    resolve: {
-        alias: {
-            '@': '/resources/js',
-        },
     },
 });
