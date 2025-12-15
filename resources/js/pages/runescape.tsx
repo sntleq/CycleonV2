@@ -409,7 +409,7 @@ export default function Runescape() {
                                     />
                                 )}
 
-                                <ScrollArea className="h-105 border rounded-md">
+                                <ScrollArea className="h-120 border rounded-md">
                                     {loadingItemDetails ? (
                                         <div className="h-121 flex items-center justify-center">
                                             <LoaderCircle className="animate-spin text-primary mr-2" />

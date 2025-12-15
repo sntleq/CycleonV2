@@ -18,11 +18,11 @@ import React from "react";
 
 export interface StockItem {
     name: string;
-    Stock?: number;
-    stock?: number;
-    quantity?: number;
+    Stock?: number;     // ← Make optional
+    stock?: number;     // ← Add lowercase version
+    quantity?: number;  // ← Add quantity field
     Emoji?: string;
-    image?: string;
+    image?: string;     // ← Make optional
     Tier?: string;
     Set?: string;
 }
