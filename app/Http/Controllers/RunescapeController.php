@@ -122,11 +122,12 @@ class RunescapeController extends Controller
     }
 
     /**
-     * Proxy for weirdgloop.org exchange endpoint (last update date)
+     * Get last update timestamp (converted to Philippine Time)
      */
     public function lastUpdate(): JsonResponse
     {
         try {
+            // Fetch from API
             $response = Http::timeout(15)
                 ->withOptions(['verify' => false])
                 ->get(self::RUNESCAPE_API_URL . '/exchange');
@@ -144,29 +145,40 @@ class RunescapeController extends Controller
                 throw new \Exception('RS timestamp not found in response');
             }
 
-            $dateTime = new \DateTime($rsTimestamp, new \DateTimeZone('UTC'));
+            // Parse the UTC timestamp from API
+            $utcTime = new \DateTime($rsTimestamp, new \DateTimeZone('UTC'));
 
-            $formattedDate = $dateTime->format('m/d/y h:i A');
+            // Convert to Philippine Time (UTC+8)
+            $phTimeZone = new \DateTimeZone('Asia/Manila');
+            $phTime = clone $utcTime;
+            $phTime->setTimezone($phTimeZone);
+
+            // Format: MM/DD/YY h:i A (12-hour format with AM/PM)
+            $formattedDate = $phTime->format('m/d/y h:i A');
+
+            // Also keep original UTC for reference
+            $utcFormatted = $utcTime->format('m/d/y h:i A');
 
             return $this->addCorsHeaders(response()->json([
                 'timestamp' => $rsTimestamp,
                 'formatted_date' => $formattedDate,
-                'timezone' => 'UTC',
-                'rs_timestamp' => $rsTimestamp,
+                'utc_time' => $utcFormatted,
+                'timezone' => 'Asia/Manila (UTC+8)',
+                'original_timestamp' => $rsTimestamp,
                 'success' => true
             ]));
 
         } catch (\Exception $e) {
-            // Fallback to current time in UTC
-            $now = new \DateTime('now', new \DateTimeZone('UTC'));
+            // Fallback: Use current Philippine time
+            $phTimeZone = new \DateTimeZone('Asia/Manila');
+            $now = new \DateTime('now', $phTimeZone);
             $formattedDate = $now->format('m/d/y h:i A');
 
             return $this->addCorsHeaders(response()->json([
-                'timestamp' => $now->format('c'),
                 'formatted_date' => $formattedDate . ' (approx)',
-                'timezone' => 'UTC',
-                'error' => 'Using approximate time',
-                'message' => $e->getMessage()
+                'timezone' => 'Asia/Manila (UTC+8)',
+                'note' => 'Using current PH time as fallback',
+                'success' => true
             ], 200));
         }
     }
