@@ -1036,41 +1036,6 @@ export default function Runescape() {
                         <Card className="md:col-span-2 flex flex-col justify-center">
                             {loadingRankingGraph || loadingAveragePrices || loadingRankingDetails ? (
                                 <Empty className="text-muted-foreground">
-                                    <EmptyContent>
-                                        No ranking data available for graph
-                                    </EmptyContent>
-                                </Empty>
-                            )}
-                        </Card>
-                    </div>
-
-                    {/*Top Item Trades*/}
-                    <div className="mt-16 flex justify-between items-center w-full">
-                        <div className="flex flex-col gap-1">
-                            <H4>Top Item Trades</H4>
-                            <desc className="text-muted-foreground text-sm">See most traded items by daily volume</desc>
-                        </div>
-                        <Select
-                            value={topTradesPeriod}
-                            onValueChange={setTopTradesPeriod}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Time Period" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="day1">Today</SelectItem>
-                                <SelectItem value="day7">Last week</SelectItem>
-                                <SelectItem value="day30">Last month</SelectItem>
-                                <SelectItem value="day90">Last 3 months</SelectItem>
-                                <SelectItem value="day180">Last 6 months</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
-                        <ScrollArea className="h-148">
-                            {loadingTopTrades || loadingTopTradesDetails ? (
-                                <Empty className="text-muted-foreground h-148">
                                     <EmptyContent className="flex-row gap-2 items-center justify-center">
                                         <LoaderCircle className="animate-spin text-primary mb-1"/> Loading price history...
                                     </EmptyContent>
