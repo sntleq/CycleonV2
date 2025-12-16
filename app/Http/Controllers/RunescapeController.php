@@ -85,7 +85,7 @@ class RunescapeController extends Controller
     public function rankings(): JsonResponse
     {
         try {
-            $n = request()->query('n', 10);
+            $n = request()->query('n', 8);
 
             $response = Http::timeout(15)
                 ->withOptions(['verify' => false])
@@ -106,7 +106,7 @@ class RunescapeController extends Controller
     public function topTrades(): JsonResponse
     {
         try {
-            $n = request()->query('n', 10);
+            $n = request()->query('n', 8);
 
             $response = Http::timeout(15)
                 ->withOptions(['verify' => false])
