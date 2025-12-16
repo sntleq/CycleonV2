@@ -319,95 +319,52 @@ export default function Runescape() {
         fetchPredictions();
     }, [selectedItems, pricePredictPeriod]);
 
+    // SIMPLE: Just use API data for everything
     useEffect(() => {
         if (selectedItems.length === 0 || Object.keys(predictionsData).length === 0) {
-            const filteredHistoricalData = data.map(dataPoint => {
-                const newDataPoint: GraphDataPoint = { date: dataPoint.date };
-                selectedItems.forEach(itemId => {
-                    const itemIdStr = itemId.toString();
-                    if (itemIdStr in dataPoint) {
-                        newDataPoint[itemIdStr] = dataPoint[itemIdStr as keyof typeof dataPoint] as number;
-                    } else {
-                        const baseValue = 100 + (Math.random() * 400);
-                        newDataPoint[itemIdStr] = Math.round(baseValue);
-                    }
-                });
-                return newDataPoint;
-            });
-            setGraphData(filteredHistoricalData);
+            setGraphData([]);
             return;
         }
 
-        const combinedData: GraphDataPoint[] = [];
+        const mergedData: GraphDataPoint[] = [];
 
-        data.forEach(historicalPoint => {
-            const combinedPoint: GraphDataPoint = { date: historicalPoint.date };
-
-            selectedItems.forEach(itemId => {
-                const itemIdStr = itemId.toString();
-                if (itemIdStr in historicalPoint) {
-                    combinedPoint[itemIdStr] = historicalPoint[itemIdStr as keyof typeof historicalPoint] as number;
-                } else {
-                    const predictionForDate = predictionsData[itemIdStr]?.find(
-                        pred => pred.date === historicalPoint.date
-                    );
-                    if (predictionForDate) {
-                        combinedPoint[itemIdStr] = predictionForDate[itemIdStr];
-                    } else {
-                        const baseValue = 100 + (Math.random() * 400);
-                        combinedPoint[itemIdStr] = Math.round(baseValue);
-                    }
-                }
-            });
-
-            combinedData.push(combinedPoint);
-        });
-
-        const allPredictionDates = new Set<string>();
+        const allDates = new Set<string>();
         selectedItems.forEach(itemId => {
             const itemIdStr = itemId.toString();
             predictionsData[itemIdStr]?.forEach(pred => {
-                allPredictionDates.add(pred.date);
+                allDates.add(pred.date);
             });
         });
 
-        const sortedDates = Array.from(allPredictionDates).sort();
+        const sortedDates = Array.from(allDates).sort();
+
+        console.log('All API dates:', sortedDates);
+        console.log('Total dates from API:', sortedDates.length);
 
         sortedDates.forEach(date => {
-            if (data.some(h => h.date === date)) {
-                return;
-            }
-
-            const predictionPoint: GraphDataPoint = { date };
+            const dataPoint: GraphDataPoint = { date };
 
             selectedItems.forEach(itemId => {
                 const itemIdStr = itemId.toString();
-                const itemPrediction = predictionsData[itemIdStr]?.find(pred => pred.date === date);
+                const apiPoint = predictionsData[itemIdStr]?.find(pred => pred.date === date);
 
-                if (itemPrediction && itemIdStr in itemPrediction) {
-                    predictionPoint[itemIdStr] = itemPrediction[itemIdStr];
+                if (apiPoint && itemIdStr in apiPoint) {
+                    dataPoint[itemIdStr] = apiPoint[itemIdStr];
                 } else {
-                    const otherValues = selectedItems
-                        .filter(id => id !== itemId)
-                        .map(id => {
-                            const otherPred = predictionsData[id.toString()]?.find(pred => pred.date === date);
-                            return otherPred ? otherPred[id.toString()] : null;
-                        })
-                        .filter(val => val !== null) as number[];
-
-                    if (otherValues.length > 0) {
-                        const avg = otherValues.reduce((a, b) => a + b, 0) / otherValues.length;
-                        predictionPoint[itemIdStr] = Math.round(avg);
-                    } else {
-                        predictionPoint[itemIdStr] = 10000;
-                    }
                 }
             });
 
-            combinedData.push(predictionPoint);
+            mergedData.push(dataPoint);
         });
 
-        setGraphData(combinedData);
+        console.log('Final merged data:', {
+            totalPoints: mergedData.length,
+            firstDate: mergedData[0]?.date,
+            lastDate: mergedData[mergedData.length - 1]?.date,
+            items: selectedItems.map(id => id.toString())
+        });
+
+        setGraphData(mergedData);
     }, [selectedItems, predictionsData]);
 
     // ========== TOP AVERAGE PRICES SECTION FUNCTIONS ==========
