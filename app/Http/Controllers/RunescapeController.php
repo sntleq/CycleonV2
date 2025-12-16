@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 class RunescapeController extends Controller
 {
     private const BASE_URL = 'https://cycleonv2api-production.up.railway.app';
+    private const RUNESCAPE_API_URL = 'https://api.weirdgloop.org';
 
     /**
      * Add CORS headers to response
@@ -117,6 +118,56 @@ class RunescapeController extends Controller
             return $this->addCorsHeaders(response()->json([
                 'error' => 'Failed to fetch top trades'
             ], 500));
+        }
+    }
+
+    /**
+     * Proxy for weirdgloop.org exchange endpoint (last update date)
+     */
+    public function lastUpdate(): JsonResponse
+    {
+        try {
+            $response = Http::timeout(15)
+                ->withOptions(['verify' => false])
+                ->get(self::RUNESCAPE_API_URL . '/exchange');
+
+            if (!$response->successful()) {
+                throw new \Exception('Failed to fetch last update');
+            }
+
+            $data = $response->json();
+
+            // Get the RS timestamp
+            $rsTimestamp = $data['rs'] ?? null;
+
+            if (!$rsTimestamp) {
+                throw new \Exception('RS timestamp not found in response');
+            }
+
+            $dateTime = new \DateTime($rsTimestamp, new \DateTimeZone('UTC'));
+
+            $formattedDate = $dateTime->format('m/d/y h:i A');
+
+            return $this->addCorsHeaders(response()->json([
+                'timestamp' => $rsTimestamp,
+                'formatted_date' => $formattedDate,
+                'timezone' => 'UTC',
+                'rs_timestamp' => $rsTimestamp,
+                'success' => true
+            ]));
+
+        } catch (\Exception $e) {
+            // Fallback to current time in UTC
+            $now = new \DateTime('now', new \DateTimeZone('UTC'));
+            $formattedDate = $now->format('m/d/y h:i A');
+
+            return $this->addCorsHeaders(response()->json([
+                'timestamp' => $now->format('c'),
+                'formatted_date' => $formattedDate . ' (approx)',
+                'timezone' => 'UTC',
+                'error' => 'Using approximate time',
+                'message' => $e->getMessage()
+            ], 200));
         }
     }
 

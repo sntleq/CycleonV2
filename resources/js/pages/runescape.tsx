@@ -78,6 +78,16 @@ interface VolumeItem {
     volume: number;
 }
 
+// Add interface for Last Update response
+interface LastUpdateInfo {
+    timestamp?: string;
+    formatted_date?: string;
+    rs_timestamp?: string;
+    success?: boolean;
+    error?: string;
+    message?: string;
+}
+
 export default function Runescape() {
     // State variables for Price Prediction section
     const [pricePredictPeriod, setPricePredictPeriod] = useState("30");
@@ -85,7 +95,7 @@ export default function Runescape() {
     const [items, setItems] = useState<ApiItem[]>([]);
     const [loadingItems, setLoadingItems] = useState(true);
     const [selectedItemsData, setSelectedItemsData] = useState<ItemDetail[]>([]);
-    const [loadingItemDetails, setLoadingItemDetails] = useState(false);
+    const [loadingItemDetails, setLoadingItemDetails] = useState<{[key: number]: boolean}>({});
     const [graphData, setGraphData] = useState<GraphDataPoint[]>([]);
     const [loadingGraph, setLoadingGraph] = useState(false);
     const [predictionsData, setPredictionsData] = useState<{[key: string]: PredictionData[]}>({});
@@ -109,6 +119,11 @@ export default function Runescape() {
     const [topTradesGraphData, setTopTradesGraphData] = useState<GraphDataPoint[]>([]);
     const [loadingTopTradesGraph, setLoadingTopTradesGraph] = useState(false);
 
+    // State variable for Last Update Date
+    const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+    const [loadingLastUpdate, setLoadingLastUpdate] = useState(true);
+    const [lastUpdateError, setLastUpdateError] = useState(false);
+
     const data = [
         { date: "2025-12-01", "10006": 385, "10007": 320, "10008": 324, "10009": 213 },
         { date: "2025-12-02", "10006": 438, "10007": 480, "10008": 280, "10009": 190 },
@@ -124,6 +139,52 @@ export default function Runescape() {
         { date: "2025-12-12", "10006": 341, "10007": 290, "10008": 315, "10009": 270 },
         { date: "2025-12-13", "10006": 408, "10007": 450, "10008": 425, "10009": 390 },
     ];
+
+    // ========== FETCH LAST UPDATE DATE ==========
+    useEffect(() => {
+        const fetchLastUpdate = async () => {
+            try {
+                setLoadingLastUpdate(true);
+                setLastUpdateError(false);
+
+                // Use our proxy endpoint
+                const response = await fetch('/api/runescape/last-update');
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch last update: ${response.status}`);
+                }
+
+                const data: LastUpdateInfo = await response.json();
+                // Use the formatted date from the API
+                setLastUpdate(data.formatted_date || 'N/A');
+            } catch (error) {
+                console.error('Failed to fetch last update:', error);
+                setLastUpdateError(true);
+                // Fallback to current time
+                const now = new Date();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const year = String(now.getFullYear()).slice(-2);
+                const hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const formattedHours = hours % 12 || 12;
+
+                const formattedDate = `${month}/${day}/${year} ${formattedHours}:${minutes} ${ampm} (approx)`;
+                setLastUpdate(formattedDate);
+            } finally {
+                setLoadingLastUpdate(false);
+            }
+        };
+
+        fetchLastUpdate();
+
+        const interval = setInterval(() => {
+            fetchLastUpdate();
+        }, 5 * 60 * 1000); // Update every 5 minutes
+
+        return () => clearInterval(interval);
+    }, []);
 
     // ========== PRICE PREDICTION SECTION FUNCTIONS ==========
     useEffect(() => {
@@ -149,34 +210,76 @@ export default function Runescape() {
         fetchItems();
     }, []);
 
+    // Loading state in item
     useEffect(() => {
-        const fetchItemDetails = async () => {
-            if (selectedItems.length === 0) {
-                setSelectedItemsData([]);
-                return;
-            }
+        const fetchNewItemDetails = async () => {
+            const existingIds = new Set(selectedItemsData.map(item => item.id));
+            const newItems = selectedItems.filter(id => !existingIds.has(id));
 
-            setLoadingItemDetails(true);
+            if (newItems.length === 0) return;
+
+            // Set loading states for new items
+            const newLoadingStates = {...loadingItemDetails};
+            newItems.forEach(id => {
+                newLoadingStates[id] = true;
+            });
+            setLoadingItemDetails(newLoadingStates);
+
             try {
-                const promises = selectedItems.map(async (itemId) => {
-                    const response = await fetch(`/api/runescape/items/${itemId}`);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch item ${itemId}`);
+                const promises = newItems.map(async (itemId) => {
+                    try {
+                        const response = await fetch(`/api/runescape/items/${itemId}`);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch item ${itemId}`);
+                        }
+                        return response.json();
+                    } catch (error) {
+                        console.error(`Failed to fetch item ${itemId}:`, error);
+                        return null;
                     }
-                    return response.json();
                 });
 
-                const itemDetails = await Promise.all(promises);
-                setSelectedItemsData(itemDetails);
+                const newItemDetails = await Promise.all(promises);
+
+                const validNewItems = newItemDetails.filter(item => item !== null) as ItemDetail[];
+                setSelectedItemsData(prev => [...prev, ...validNewItems]);
+
+                const updatedLoadingStates = {...loadingItemDetails};
+                newItems.forEach(id => {
+                    updatedLoadingStates[id] = false;
+                });
+                setLoadingItemDetails(updatedLoadingStates);
             } catch (error) {
-                console.error('Failed to fetch item details:', error);
-            } finally {
-                setLoadingItemDetails(false);
+                console.error('Failed to fetch new item details:', error);
+                const errorLoadingStates = {...loadingItemDetails};
+                newItems.forEach(id => {
+                    errorLoadingStates[id] = false;
+                });
+                setLoadingItemDetails(errorLoadingStates);
             }
         };
 
-        fetchItemDetails();
+        fetchNewItemDetails();
     }, [selectedItems]);
+
+    // Remove items from selectedItemsData when they're removed from selectedItems
+    useEffect(() => {
+        const existingIds = new Set(selectedItems);
+        const filteredData = selectedItemsData.filter(item => existingIds.has(item.id));
+
+        if (filteredData.length !== selectedItemsData.length) {
+            setSelectedItemsData(filteredData);
+
+            const filteredLoadingStates = {...loadingItemDetails};
+            Object.keys(filteredLoadingStates).forEach(key => {
+                const id = parseInt(key);
+                if (!existingIds.has(id)) {
+                    delete filteredLoadingStates[id];
+                }
+            });
+            setLoadingItemDetails(filteredLoadingStates);
+        }
+    }, [selectedItems, selectedItemsData.length]);
 
     useEffect(() => {
         const fetchPredictions = async () => {
@@ -312,7 +415,7 @@ export default function Runescape() {
         const fetchAveragePrices = async () => {
             try {
                 setLoadingAveragePrices(true);
-                const response = await fetch(`/api/runescape/rankings?n=8`);
+                const response = await fetch(`/api/runescape/rankings?n=10`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -392,7 +495,7 @@ export default function Runescape() {
         const fetchTopTrades = async () => {
             try {
                 setLoadingTopTrades(true);
-                const response = await fetch(`/api/runescape/top-trades?n=8`);
+                const response = await fetch(`/api/runescape/top-trades?n=10`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -543,11 +646,11 @@ export default function Runescape() {
 
                     topTradesData.forEach((item, index) => {
                         const baseVolume = item.volume;
-                        const positionFactor = 0.8 + (index * 0.03); // Higher ranked items trade more
+                        const positionFactor = 0.8 + (index * 0.03);
                         const dayIndex = dates.indexOf(date);
 
-                        const trend = 1.0 + (Math.random() * 0.02); // Slight upward trend for popular items
-                        const dailyChange = 0.8 + (Math.random() * 0.4); // Higher volatility for trade volume
+                        const trend = 1.0 + (Math.random() * 0.02);
+                        const dailyChange = 0.8 + (Math.random() * 0.4);
 
                         const volume = Math.round(
                             baseVolume *
@@ -666,14 +769,16 @@ export default function Runescape() {
                         {/* Last Update Indicator */}
                         <div className="text-sm space-x-2 text-pretty">
                             Updates daily <Dot className="inline-block align-middle"/>
-                            Last updated: {new Date().toLocaleString('en-PH', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: '2-digit',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                        })}
+                            {loadingLastUpdate ? (
+                                <span className="flex items-center">
+                                    <LoaderCircle className="animate-spin h-3 w-3 mr-2" />
+                                    Loading last update...
+                                </span>
+                            ) : lastUpdateError ? (
+                                <span>Last updated: {lastUpdate}</span>
+                            ) : (
+                                <span>Last updated: {lastUpdate}</span>
+                            )}
                         </div>
                     </div>
 
@@ -721,55 +826,97 @@ export default function Runescape() {
                                 />
 
                                 <ScrollArea className="h-120 border rounded-md">
-                                    {loadingItemDetails ? (
-                                        <Empty className="text-muted-foreground h-119">
-                                            <EmptyContent className="flex-row gap-2 items-center justify-center">
-                                                <LoaderCircle className="animate-spin text-primary mb-1"/> Fetching item details...
-                                            </EmptyContent>
-                                        </Empty>
-                                    ) : selectedItemsData.length > 0 ? (
-                                        <div className="flex flex-col">
-                                            <ItemGroup>
-                                                {selectedItemsData.map((item, index) => (
-                                                    <div key={item.id}>
-                                                        <Item>
-                                                            <ItemMedia variant="image">
-                                                                <img
-                                                                    src={item.icon}
-                                                                    alt={item.name}
-                                                                    className="w-10 h-10"
-                                                                    onError={handleImageError}
-                                                                />
-                                                            </ItemMedia>
-                                                            <ItemContent>
-                                                                <ItemTitle className="truncate">
-                                                                    {item.name}
-                                                                </ItemTitle>
-                                                                <ItemDescription className="truncate">
-                                                                    {item.description}
-                                                                </ItemDescription>
-                                                            </ItemContent>
-                                                            <ItemActions>
-                                                                <X
-                                                                    className="size-4 hover:text-primary cursor-pointer"
-                                                                    onClick={() => {
-                                                                        console.log('X button clicked for item:', item.id, 'item.name:', item.name);
-                                                                        handleRemoveItem(item.id);
-                                                                    }}
-                                                                />
-                                                            </ItemActions>
-                                                        </Item>
-                                                        {index !== selectedItemsData.length - 1 && <ItemSeparator />}
-                                                    </div>
-                                                ))}
-                                            </ItemGroup>
-                                        </div>
-                                    ) : (
+                                    {selectedItems.length === 0 ? (
                                         <Empty className="h-119 text-muted-foreground">
                                             <EmptyContent>
                                                 No items selected
                                             </EmptyContent>
                                         </Empty>
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            <ItemGroup>
+                                                {selectedItems.map((itemId, index) => {
+                                                    const itemData = selectedItemsData.find(item => item.id === itemId);
+                                                    const isLoading = loadingItemDetails[itemId] || false;
+
+                                                    return (
+                                                        <div key={itemId}>
+                                                            {isLoading ? (
+                                                                <Item>
+                                                                    <ItemMedia variant="image">
+                                                                        <div className="w-10 h-10 bg-muted flex items-center justify-center">
+                                                                            <LoaderCircle className="animate-spin text-primary" size={20} />
+                                                                        </div>
+                                                                    </ItemMedia>
+                                                                    <ItemContent>
+                                                                        <ItemTitle className="truncate">
+                                                                            Loading item...
+                                                                        </ItemTitle>
+                                                                        <ItemDescription className="truncate">
+                                                                            Fetching item details
+                                                                        </ItemDescription>
+                                                                    </ItemContent>
+                                                                    <ItemActions>
+                                                                        <X
+                                                                            className="size-4 hover:text-primary cursor-pointer"
+                                                                            onClick={() => handleRemoveItem(itemId)}
+                                                                        />
+                                                                    </ItemActions>
+                                                                </Item>
+                                                            ) : itemData ? (
+                                                                <Item>
+                                                                    <ItemMedia variant="image">
+                                                                        <img
+                                                                            src={itemData.icon}
+                                                                            alt={itemData.name}
+                                                                            className="w-10 h-10"
+                                                                            onError={handleImageError}
+                                                                        />
+                                                                    </ItemMedia>
+                                                                    <ItemContent>
+                                                                        <ItemTitle className="truncate">
+                                                                            {itemData.name}
+                                                                        </ItemTitle>
+                                                                        <ItemDescription className="truncate">
+                                                                            {itemData.description}
+                                                                        </ItemDescription>
+                                                                    </ItemContent>
+                                                                    <ItemActions>
+                                                                        <X
+                                                                            className="size-4 hover:text-primary cursor-pointer"
+                                                                            onClick={() => handleRemoveItem(itemId)}
+                                                                        />
+                                                                    </ItemActions>
+                                                                </Item>
+                                                            ) : (
+                                                                <Item>
+                                                                    <ItemMedia variant="image">
+                                                                        <div className="w-10 h-10 bg-muted flex items-center justify-center">
+                                                                            <LoaderCircle className="animate-spin text-primary" size={20} />
+                                                                        </div>
+                                                                    </ItemMedia>
+                                                                    <ItemContent>
+                                                                        <ItemTitle className="truncate">
+                                                                            Item {itemId}
+                                                                        </ItemTitle>
+                                                                        <ItemDescription className="truncate">
+                                                                            Loading...
+                                                                        </ItemDescription>
+                                                                    </ItemContent>
+                                                                    <ItemActions>
+                                                                        <X
+                                                                            className="size-4 hover:text-primary cursor-pointer"
+                                                                            onClick={() => handleRemoveItem(itemId)}
+                                                                        />
+                                                                    </ItemActions>
+                                                                </Item>
+                                                            )}
+                                                            {index !== selectedItems.length - 1 && <ItemSeparator />}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </ItemGroup>
+                                        </div>
                                     )}
                                 </ScrollArea>
                             </CardContent>
@@ -812,8 +959,8 @@ export default function Runescape() {
                     {/*Top Average Prices*/}
                     <div className="mt-16 flex justify-between items-center w-full">
                         <div className="flex flex-col gap-1">
-                            <H4>Top Average Item Prices</H4>
-                            <desc className="text-muted-foreground text-sm">See most valuable traded items by daily price average</desc>
+                            <H4>Top Item Prices</H4>
+                            <desc className="text-muted-foreground text-sm">See most valuable items by daily average price</desc>
                         </div>
                         <Select
                             value={averagePricePeriod}
@@ -889,6 +1036,41 @@ export default function Runescape() {
                         <Card className="md:col-span-2 flex flex-col justify-center">
                             {loadingRankingGraph || loadingAveragePrices || loadingRankingDetails ? (
                                 <Empty className="text-muted-foreground">
+                                    <EmptyContent>
+                                        No ranking data available for graph
+                                    </EmptyContent>
+                                </Empty>
+                            )}
+                        </Card>
+                    </div>
+
+                    {/*Top Item Trades*/}
+                    <div className="mt-16 flex justify-between items-center w-full">
+                        <div className="flex flex-col gap-1">
+                            <H4>Top Item Trades</H4>
+                            <desc className="text-muted-foreground text-sm">See most traded items by daily volume</desc>
+                        </div>
+                        <Select
+                            value={topTradesPeriod}
+                            onValueChange={setTopTradesPeriod}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Time Period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="day1">Today</SelectItem>
+                                <SelectItem value="day7">Last week</SelectItem>
+                                <SelectItem value="day30">Last month</SelectItem>
+                                <SelectItem value="day90">Last 3 months</SelectItem>
+                                <SelectItem value="day180">Last 6 months</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid auto-rows-min gap-6 md:grid-cols-3 bg-transparent">
+                        <ScrollArea className="h-148">
+                            {loadingTopTrades || loadingTopTradesDetails ? (
+                                <Empty className="text-muted-foreground h-148">
                                     <EmptyContent className="flex-row gap-2 items-center justify-center">
                                         <LoaderCircle className="animate-spin text-primary mb-1"/> Loading price history...
                                     </EmptyContent>
