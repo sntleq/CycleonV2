@@ -18,7 +18,7 @@ Route::prefix('api/runescape')->group(function () {
     Route::get('/predictions/{id}', [RunescapeController::class, 'predictions']);
     Route::get('/rankings', [RunescapeController::class, 'rankings']);
     Route::get('/top-trades', [RunescapeController::class, 'topTrades']);
+    Route::get('/runedate', [RunescapeController::class, 'runedate']);
+    Route::get('/last-update', [RunescapeController::class, 'lastUpdate']);
     Route::options('/{any}', [RunescapeController::class, 'options'])->where('any', '.*');
 });
-
-
